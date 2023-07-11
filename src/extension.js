@@ -1,37 +1,57 @@
 import * as vscode from 'vscode'
 
-export function activate(context) {
-  let disposable = vscode.commands.registerCommand('extension.saveFormatSave', async () => {
-    // The code you place here will be executed every time your command is executed
+let executeCodeActionsOnSave = async () => {
+  // Get the settings
+  let codeActionsOnSave = vscode.workspace.getConfiguration().get('editor.codeActionsOnSave')
 
-    // Get the active text editor
-    let editor = vscode.window.activeTextEditor
-    if (editor) {
-      let document = editor.document
-
-      // Save the document
-      await document.save()
-
-      // Format the document
-      let options = {} // Formatting options
-      let edits = await vscode.commands.executeCommand(
-        'vscode.executeFormatDocumentProvider',
-        document.uri,
-        options,
-      )
-
-      if (edits && Array.isArray(edits)) {
-        await editor.edit(editBuilder => {
-          for (let edit of edits) {
-            editBuilder.replace(edit.range, edit.newText)
-          }
-        })
+  // Iterate through each setting
+  for (let [actionKind, shouldExecute] of Object.entries(codeActionsOnSave)) {
+    // Check if the action should be executed
+    console.log('actionKind,shouldExecute', actionKind, shouldExecute)
+    if (shouldExecute) {
+      let command = ''
+      // Map actionKind to corresponding command
+      switch (actionKind) {
+        case 'source.fixAll.eslint':
+          command = 'eslint.executeAutofix'
+          break
+        case 'source.fixAll':
+          command = 'editor.action.fixAll'
+          break
+        default:
+          console.log(`Unknown action kind: ${actionKind}`)
+          continue
       }
-
-      // Save the document again
-      await document.save()
+      // Execute the command
+      await vscode.commands.executeCommand(command)
     }
-  })
+  }
+}
+
+// Call the function
+
+export let activate = context => {
+  let disposable = vscode.commands.registerCommand(
+    'saveFirstThenFormat.saveFirstThenFormat',
+    async () => {
+      // The code you place here will be executed every time your command is executed
+      // Get the active text editor
+      let editor = vscode.window.activeTextEditor
+      if (editor) {
+        let document = editor.document
+        await vscode.workspace
+          .getConfiguration('editor')
+          .update('formatOnSave', false, vscode.ConfigurationTarget.Global)
+
+        await document.save()
+        await vscode.workspace
+          .getConfiguration('editor')
+          .update('formatOnSave', true, vscode.ConfigurationTarget.Global)
+        await setTimeout(() => {}, 100)
+        await document.save()
+      }
+    },
+  )
 
   context.subscriptions.push(disposable)
 }

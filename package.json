@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "savefirstthenformat.helloWorld",
-        "title": "Hello World"
+        "command": "saveFirstThenFormat.saveFirstThenFormat",
+        "title": "Save First Then Format"
       }
     ]
   },
